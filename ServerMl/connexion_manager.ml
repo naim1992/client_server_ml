@@ -98,8 +98,8 @@ inherit connexion sd sa b clients tirage dictionnaire
           let message =  "DECONNEXION/" ^ user ^ "\n" in
           List.map (
                       fun x -> 
-                                Marshal.to_channel x.outchan message [];
-                                print_endline ("user : " ^ user)
+                                output_string x.outchan message;
+                								flush x.outchan;
                     ) !clients;
           Unix.close s_descr
 
@@ -112,9 +112,9 @@ method signal_connexion client =
   let others = List.filter (fun x -> x.socket <> s_descr) !clients in
   let message = "CONNECTE/" ^ client ^ "\n"   in
   List.map (
-              fun x ->      
-                  Marshal.to_channel x.outchan message [];
-                  print_endline ("user : " ^ x.user)       
+              fun x ->  
+								output_string x.outchan message;
+                flush x.outchan;          
               ) others;
   ()
 
@@ -130,7 +130,7 @@ method signal_connexion client =
           else
             begin
               (* pour la gestion de temps*)
-                Thread.create gestion_temps clients;
+                (* Thread.create gestion_temps clients; *)
                 clients := !clients@[{user = client; socket = s_descr; score = ref 0; outchan = out_chan}];
                 print_endline ("new Connexion from : " ^ client);
 
@@ -199,7 +199,7 @@ method signal_connexion client =
     method treat_request message =
       match (List.nth message 0) with
         "CONNEXION" -> self#connect (List.nth message 1);
-                      (* self#signal_connexion (List.nth message 1); *) 
+                       self#signal_connexion (List.nth message 1); 
                        self#start_session ()
         | "TROUVE" -> print_endline ""(* self#trouve (List.nth message 1) (List.nth message 2) *)
                                        
