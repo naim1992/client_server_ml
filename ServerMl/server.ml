@@ -1,42 +1,11 @@
 
-
-let read_file filename = 
-    let lines = ref [""] in
-    let chan = open_in filename in
-    try
-      while true; do
-        lines := input_line chan :: !lines
-      done;
-      !lines
-    with End_of_file ->
-      close_in chan;
-      List.rev !lines;;
-      
-
-let des () = 
-  let matrice = Array.make_matrix 4 4 "" and
-  list_des = read_file "des.dat" and index = ref 1 in
-  for i = 0 to (Array.length matrice) - 1 do
-    for j = 0 to (Array.length matrice.(i)) - 1 do
-        let rand = Random.int 6 and
-            case = List.nth list_des !index 
-            in 
-              matrice.(i).(j) <- (String.make 1 case.[rand]);
-              index := !index + 1   
-      done
-  done;
-  matrice;;
-      
-
-
 class virtual server port n = 
 object (s)
 val port_num = port
 val nb_pending = n
-val clients = ref []
-val dictionnaire = read_file "dictionnaire.dat"
-(*tirage : matrice 4*4 *)
-val tirage = des ()
+
+
+
 val sock = ThreadUnix.socket Unix.PF_INET Unix.SOCK_STREAM 0
 
 

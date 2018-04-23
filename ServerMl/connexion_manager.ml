@@ -7,7 +7,7 @@ exception Fin ;;
 (* pour la gestion de temps*)
 let gestion_temps clients = 
   Thread.delay 0.30;
-  List.map (fun x -> Unix.close x.socket) !clients;;
+  List.map (fun x -> Unix.close x.socket) clients;;
 
   (*recuperer la les scores*)
 let scores list = 
@@ -200,7 +200,13 @@ method signal_connexion client =
       match (List.nth message 0) with
         "CONNEXION" -> self#connect (List.nth message 1);
                        self#signal_connexion (List.nth message 1); 
-                       self#start_session ()
+                       if (List.length !clients = 1) then 
+												begin
+													self#start_session ()
+												end;
+													self#nouveau_tour ()
+												
+												
         | "TROUVE" -> print_endline ""(* self#trouve (List.nth message 1) (List.nth message 2) *)
                                        
         | "SORT" -> print_endline ("deconnexion of : " ^ List.nth message 1);
