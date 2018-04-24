@@ -11,10 +11,10 @@ val sock = ThreadUnix.socket Unix.PF_INET Unix.SOCK_STREAM 0
 
 
 method start () =
-  let host = Unix.gethostbyname (Unix.gethostname ()) in 
-  (* let host = Unix.gethostbyname (
+  (* let host = Unix.gethostbyname (Unix.gethostname ()) in *)
+  let host = Unix.gethostbyname (
                         Unix.string_of_inet_addr (
-                        Unix.inet_addr_of_string  "132.227.112.144")) in *)
+                        Unix.inet_addr_of_string  "132.227.112.132")) in 
   let h_addr = host.Unix.h_addr_list.(0) in
   let sock_addr = Unix.ADDR_INET(h_addr, port_num) in
   Unix.setsockopt sock Unix.SO_REUSEADDR true; 
