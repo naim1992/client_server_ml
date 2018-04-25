@@ -1,5 +1,5 @@
 
-class virtual connexion sd (sa : Unix.sockaddr) b clients tirage dictionnaire =
+class virtual connexion sd (sa : Unix.sockaddr) b tour=
 object (self)
  val s_descr = sd
  val s_addr = sa

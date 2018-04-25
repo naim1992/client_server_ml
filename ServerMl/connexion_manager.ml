@@ -1,29 +1,10 @@
 open Connexion;;
 
-type infos = {user : string; socket : Unix.file_descr; score : int ref; outchan : out_channel };;
+type infos = {user : string; socket : Unix.file_descr; motsproposes: string ref;  score : int ref; outchan : out_channel };;
 
 exception Fin ;;
 
 
-  (*recuperer la les scores*)
-let scores list = 
-  let elements  = ref "" in
-      List.map (fun x -> elements := !elements ^ ";" ^ (string_of_int !(x.score))) list;
-    !elements ;; 
-
-
-  (*transformer la matrice en  string pour l'envoyer*)
-let array_to_string tab = 
-  let tab_string = ref "" in 
-   for i = 0 to ((Array.length tab) -1)  do
-    for j = 0 to ((Array.length tab.(i)) -1)  do
-    tab_string := !tab_string ^ tab.(i).(j);
-    done
-   done;
-   tab_string := !tab_string ^ "\n";
-   !tab_string;;
-
-   
 (* verifier la trajectoire *)
 let verif_traj traj = 
   
@@ -67,12 +48,13 @@ let word_in_case case tab =
     | 'B' -> tab.(1).((int_of_string (String.make 1 case.[1])) - 1)
     | 'C' -> tab.(2).((int_of_string (String.make 1 case.[1])) - 1)
     | 'D' -> tab.(3).((int_of_string (String.make 1 case.[1])) - 1)
+		| _ -> ""
     in
 		
   lettre;;
 
 
-(*pour trouver un mot selon sa trajctoire*)
+(* pour trouver un mot selon sa trajctoire *)
 let find traj tab = 
   let i = ref 0 and mot = ref "" in
   if (String.length traj) mod 2 = 0 then  
@@ -82,25 +64,45 @@ let find traj tab =
         i := !i + 2
       done
   end;
-    !mot;;
-  
+    !mot
 
-class connexion_maj sd sa b clients tirage dictionnaire =
+  (*recuperer la les scores*)
+let scores list = 
+  let elements  = ref "" in
+     ignore (List.map (fun x -> elements := !elements ^ ";" ^ (string_of_int !(x.score))) list);
+    !elements ;; 
+
+
+  (*transformer la matrice en  string pour l'envoyer*)
+let array_to_string tab = 
+  let tab_string = ref "" in 
+   for i = 0 to ((Array.length tab) -1)  do
+    for j = 0 to ((Array.length tab.(i)) -1)  do
+    tab_string := !tab_string ^ tab.(i).(j);
+    done
+   done;
+   tab_string := !tab_string ^ "\n";
+   !tab_string;;
+
+class connexion_maj sd sa b tour =
 object(self)
-inherit connexion sd sa b clients tirage dictionnaire
+inherit connexion sd sa b tour
     
     val score = ref 0
     val inchan = Unix.in_channel_of_descr sd
     val out_chan = Unix.out_channel_of_descr sd
+		val clients = tour#getClients
+		val tirage = tour#getTirage
+		val dictionnaire = tour#getDictionnaire
 
     method deconnect user = 
           clients := List.filter (fun x -> x.socket <> s_descr) !clients;
           let message =  "DECONNEXION/" ^ user ^ "\n" in
-          List.map (
+          ignore(List.map (
                       fun x -> 
                                 output_string x.outchan message;
                 								flush x.outchan;
-                    ) !clients;
+                    ) !clients);
           Unix.close s_descr
 
 
@@ -111,12 +113,12 @@ inherit connexion sd sa b clients tirage dictionnaire
 method signal_connexion client = 
   let others = List.filter (fun x -> x.socket <> s_descr) !clients in
   let message = "CONNECTE/" ^ client ^ "\n"   in
-  List.map (
+  ignore(List.map (
               fun x ->  
 								output_string x.outchan message;
                 flush x.outchan;          
-              ) others;
-  ()
+              ) others)
+  
 
 (*nouvelle connexion d'un client *)
     method connect client = 
@@ -131,7 +133,7 @@ method signal_connexion client =
             begin
               (* pour la gestion de temps*)
                 (* Thread.create gestion_temps clients; *)
-                clients := !clients@[{user = client; socket = s_descr; score = ref 0; outchan = out_chan}];
+                clients := !clients@[{user = client; socket = s_descr; motsproposes = ref ""; score = ref 0; outchan = out_chan}];
                 print_endline ("new Connexion from : " ^ client);
 
                 let message = "Bienvenue : " ^ client ^ "\n" in
@@ -142,7 +144,7 @@ method signal_connexion client =
 
     (* debut d'une session *)
     method start_session () = 
-            let message = "SESSION/" ^ (array_to_string tirage) ^ "\n" in
+            let message = "SESSION/\n" in
               output_string out_chan message;
               flush out_chan
 
@@ -158,13 +160,13 @@ method signal_connexion client =
         output_string out_chan message;
         flush out_chan
   
-  (* phase de recherche *)
+	(* phase de recherche *)
   method trouve mot trajectoire =			
+		print_endline (array_to_string tirage);
 		let reponse = ref "" in
 			print_endline trajectoire; 
       if (verif_traj trajectoire == true) then
         begin		
-						
 						if String.equal mot (find trajectoire tirage) then
 	              begin
 	                  (* verifier l'existance d'un mot dans le dictionnaire*)
@@ -180,10 +182,18 @@ method signal_connexion client =
 			                              | 5 -> score := !score + 2
 			                              | 6 -> score := !score + 3
 			                              | 7 -> score := !score + 5
+																		| _ -> score := !score
 			                          end;
 																
 			                          (* TODO: a verifier *)
-			                         ignore(List.map (fun x -> if x.socket = s_descr then x.score := !score ) !clients);
+			                        clients := List.map (fun x -> if x.socket = s_descr then
+																									begin
+																				 					x.score := !score;
+																									x.motsproposes := !(x.motsproposes) ^ " " ^  mot
+																									end;
+																									x
+																								) !clients;
+																	
 															reponse := "MVALIDE/" ^ mot ^ "\n"
 			                    end
 	                  else
@@ -197,7 +207,8 @@ method signal_connexion client =
             reponse := "MINVALIDE/FAUSSE TRAJECTOIRE\n"  
         end;
         output_string out_chan !reponse;
-        flush out_chan    
+        flush out_chan
+      
       
 
     method treat_request message =
