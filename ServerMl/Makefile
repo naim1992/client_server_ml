@@ -4,8 +4,8 @@ SOURCES = connexion.ml connexion_manager.ml server.ml server_manager.ml main.ml
 
 EXEC = a.out
 
-#CAMLC = ocamlc -g
-CAMLC = ~/Bureau/bin/ocamlc -g
+CAMLC = ocamlc -g
+#CAMLC = ~/Bureau/bin/ocamlc -g
 CAMLDEP = ocamldep
 
 LIBS = $(WITHUNIX) $(WITHTHREADS) 

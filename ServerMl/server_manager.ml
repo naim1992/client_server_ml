@@ -6,6 +6,10 @@ let mutex = Mutex.create ();;
 let cond = Condition.create ();;
 let matrice = Array.make_matrix 4 4 "";;
 let num_tour = ref 1;;
+let nb_tour = 5;;
+
+
+	
 
 
   (*transformer la matrice en  string pour l'envoyer*)
@@ -68,28 +72,12 @@ let bilan clients =
 				)
 				
 				
-let expiration clients = 
-	  Thread.delay 30.0;
-		print_endline "fin de temps repartie";
-		let message =  "RFIN/\n" in
-          ignore (List.map (
-                      fun x -> 
-                                output_string x.outchan message;
-                								flush x.outchan;
-                    ) !clients);
-										Mutex.lock mutex;
-										Condition.signal cond;
-										Mutex.unlock mutex;
-										bilan !clients;
-		Thread.exit ();;	
+
 		
 
 
 class tour (usrs : Connexion_manager.infos list ref) = 
 	object(self)
-	initializer
-		des ();
-		ignore (self#fin_tour ())
 	
 	(* method debut_tour = *) 
 	
@@ -102,9 +90,37 @@ class tour (usrs : Connexion_manager.infos list ref) =
   method getTirage = matrice
 	method setTirage () = des (); tirage <- matrice
 	
-	method fin_tour () =  Thread.create (fun x -> expiration self#getClients)() 
+	method fin_tour () =  Thread.create (fun x -> self#expiration self#getClients)() 
 	
+	(* experation de tour *)
+	method expiration clients = 
+		Thread.delay 30.0;
+		print_endline ("fin de temps repartie pour le tour " ^ string_of_int !num_tour);
+		let message =  "RFIN/\n" in
+          ignore (List.map (
+                      fun x -> 
+                                output_string x.outchan message;
+                								flush x.outchan;
+                    ) !clients);
+										bilan !clients;
+										num_tour := !num_tour + 1; 
+										ignore (Thread.create (fun x -> self#start_tour !num_tour)());
+		Thread.exit ()	
 	
+	method start_tour num = 
+		if !num_tour < nb_tour then 
+			begin
+				print_endline ("debut de tour " ^ string_of_int num);
+				
+				self#setTirage ();
+				let message = "TOUR/" ^ (array_to_string self#getTirage) in
+								ignore (List.map (
+						                      fun x -> 
+						                                output_string x.outchan message;
+						                								flush x.outchan;
+						                    ) !users);
+				ignore(self#fin_tour ())
+			end
 		
 
 end;;
@@ -113,37 +129,8 @@ class server_maj port n =
    object(self)
    inherit server port n
 		
-	val mutable tour_actuel = new tour users
+	 val mutable tour_actuel = new tour users
 	 
-	method start_tour num = 
-		while !num_tour <> num do
-			Mutex.lock mutex;
-			Condition.wait cond mutex;
-			Mutex.unlock mutex
-		done;
-		
-				Mutex.lock mutex;
-				tour_actuel#fin_tour ();
-				tour_actuel#setTirage ();
-				let message = "TOUR/" ^ (array_to_string tour_actuel#getTirage) in
-								ignore (List.map (
-						                      fun x -> 
-						                                output_string x.outchan message;
-						                								flush x.outchan;
-						                    ) !users);
-				
-				num_tour := !num_tour + 1;
-				Condition.signal cond;
-				Mutex.unlock mutex
-											
-			
-		
-		 
    method treat s sa =
-	 for i = 1 to 5 do	
-   		ignore (Thread.create (fun x -> self#start_tour i)())
-		done;
-		
 	 ignore( (new connexion_maj s sa true tour_actuel )#start())
-	
    end;;

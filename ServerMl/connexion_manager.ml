@@ -211,21 +211,44 @@ method signal_connexion client =
       
       
 
+	(* envoie de message public *)
+	method broadcast_message msg = 
+		ignore(
+			let message = "RECEPTION/" ^ msg ^ "\n" in
+			List.map (fun x -> output_string x.outchan message;
+        			flush x.outchan) !clients)
+							
+	method send_message_to msg user = 
+		ignore(
+		try
+				let message = "PRECEPTION/" ^ msg ^ "/" ^ user ^ "\n" and
+				 client = List.find (fun x -> x.user = user) !clients in
+				output_string client.outchan message;
+        flush client.outchan
+		 with Not_found -> ())
+			
+
     method treat_request message =
 			match (List.nth message 0) with
         "CONNEXION" -> self#connect (List.nth message 1);
                        self#signal_connexion (List.nth message 1); 
                        if (List.length !clients = 1) then 
 												begin
-													self#start_session ()
+													self#start_session ();
+													ignore (Thread.create (fun x -> tour#start_tour 1)())
+		
 												end;
 													self#nouveau_tour ()
 												
 												
         | "TROUVE" -> self#trouve (List.nth message 1) (List.nth message 2)
                                        
-        | "SORT" -> print_endline ("deconnexion of : " ^ List.nth message 1);
-                            self#deconnect (List.nth message 1)
+        | "SORT" -> self#deconnect (List.nth message 1)
+				| "ENVOI" -> 	self#broadcast_message (List.nth message 1)													
+														
+
+				| "PENVOI" -> self#send_message_to (List.nth message 1) (List.nth message 2)
+														
         | _ -> let message = "Commande Invalide\n" in
                 	output_string out_chan message;
             			flush out_chan

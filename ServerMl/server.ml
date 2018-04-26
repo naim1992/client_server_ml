@@ -14,7 +14,7 @@ method start () =
   (* let host = Unix.gethostbyname (Unix.gethostname ()) in *)
   let host = Unix.gethostbyname (
                         Unix.string_of_inet_addr (
-                        Unix.inet_addr_of_string  "132.227.112.132")) in 
+                        Unix.inet_addr_of_string  "127.0.0.1")) in 
   let h_addr = host.Unix.h_addr_list.(0) in
   let sock_addr = Unix.ADDR_INET(h_addr, port_num) in
   Unix.setsockopt sock Unix.SO_REUSEADDR true; 
