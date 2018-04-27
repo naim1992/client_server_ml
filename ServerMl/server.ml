@@ -2,7 +2,7 @@
 class virtual server port n = 
 object (s)
 val port_num = port
-val nb_pending = n
+val nb_tour = n
 
 
 
@@ -19,7 +19,7 @@ method start () =
   let sock_addr = Unix.ADDR_INET(h_addr, port_num) in
   Unix.setsockopt sock Unix.SO_REUSEADDR true; 
   Unix.bind sock sock_addr;
-  Unix.listen sock n;
+  Unix.listen sock 1000;
 
   print_endline ("serveur lancé sur : " ^ Unix.string_of_inet_addr h_addr);
   while true do

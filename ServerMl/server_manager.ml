@@ -6,7 +6,7 @@ let mutex = Mutex.create ();;
 let cond = Condition.create ();;
 let matrice = Array.make_matrix 4 4 "";;
 let num_tour = ref 1;;
-let nb_tour = 5;;
+
 
 
 	
@@ -76,8 +76,9 @@ let bilan clients =
 		
 
 
-class tour (usrs : Connexion_manager.infos list ref) = 
+class tour (usrs : Connexion_manager.infos list ref) nb_tour= 
 	object(self)
+
 	
 	(* method debut_tour = *) 
 	
@@ -129,7 +130,8 @@ class server_maj port n =
    object(self)
    inherit server port n
 		
-	 val mutable tour_actuel = new tour users
+					
+	 val mutable tour_actuel = new tour users n
 	 
    method treat s sa =
 	 ignore( (new connexion_maj s sa true tour_actuel )#start())
