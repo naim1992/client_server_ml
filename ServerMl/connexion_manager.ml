@@ -81,7 +81,6 @@ let array_to_string tab =
     tab_string := !tab_string ^ tab.(i).(j);
     done
    done;
-   tab_string := !tab_string ^ "\n";
    !tab_string;;
 
 class connexion_maj sd sa b tour =
@@ -135,8 +134,12 @@ method signal_connexion client =
                 (* Thread.create gestion_temps clients; *)
                 clients := !clients@[{user = client; socket = s_descr; motsproposes = ref ""; score = ref 0; outchan = out_chan}];
                 print_endline ("new Connexion from : " ^ client);
-
-                let message = "Bienvenue : " ^ client ^ "\n" in
+								let scores = ref ((string_of_int (tour#getNumTour ())) ^ "*") in
+					   
+								List.map (fun y -> 
+					                  scores := !scores ^ y.user ^  "*" ^ (string_of_int !(y.score) ^ "*")) !clients;
+						
+                let message = "BIENVENU/" ^ (array_to_string tour#getTirage) ^ "/" ^ !scores ^ "/\n" in
                         output_string out_chan message;
                         flush out_chan
               
@@ -230,16 +233,15 @@ method signal_connexion client =
 
     method treat_request message =
 			match (List.nth message 0) with
-        "CONNEXION" -> self#connect (List.nth message 1);
-                       self#signal_connexion (List.nth message 1); 
-                       if (List.length !clients = 1) then 
+        "CONNEXION" ->  
+                       if (List.length !clients = 0) then 
 												begin
-													self#start_session ();
-													ignore (Thread.create (fun x -> tour#start_tour 1)())
-		
+													ignore (Thread.create (fun x -> tour#start_tour 1)());
+													self#start_session ()
 												end;
-													self#nouveau_tour ()
 												
+												self#connect (List.nth message 1);						
+                       self#signal_connexion (List.nth message 1)
 												
         | "TROUVE" -> self#trouve (List.nth message 1) (List.nth message 2)
                                        

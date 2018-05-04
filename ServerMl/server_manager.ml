@@ -6,7 +6,7 @@ let mutex = Mutex.create ();;
 let cond = Condition.create ();;
 let matrice = Array.make_matrix 4 4 "";;
 let num_tour = ref 1;;
-
+let mutex = Mutex.create ();;
 
 
 	
@@ -20,7 +20,6 @@ let array_to_string tab =
     tab_string := !tab_string ^ tab.(i).(j);
     done
    done;
-   tab_string := !tab_string ^ "\n";
    !tab_string;;
 
 
@@ -78,6 +77,8 @@ let bilan clients =
 
 class tour (usrs : Connexion_manager.infos list ref) nb_tour= 
 	object(self)
+	initializer 
+		self#setTirage ()
 
 	
 	(* method debut_tour = *) 
@@ -88,10 +89,18 @@ class tour (usrs : Connexion_manager.infos list ref) nb_tour=
 	
 	method getDictionnaire = read_file "dictionnaire.dat"
   (*tirage : matrice 4*4 *)
-  method getTirage = matrice
-	method setTirage () = des (); tirage <- matrice
+  method getTirage = matrice;
+	
+		
+		
+	method setTirage () = 
+												des ();
+												tirage <- matrice;
+												
+												
 	
 	method fin_tour () =  Thread.create (fun x -> self#expiration self#getClients)() 
+	method getNumTour () = !num_tour
 	
 	(* experation de tour *)
 	method expiration clients = 
@@ -113,13 +122,18 @@ class tour (usrs : Connexion_manager.infos list ref) nb_tour=
 			begin
 				print_endline ("debut de tour " ^ string_of_int num);
 				
+				
+				if (!num_tour > 1) then
+					begin
 				self#setTirage ();
-				let message = "TOUR/" ^ (array_to_string self#getTirage) in
+				let message = "TOUR/" ^ (array_to_string self#getTirage) ^ "/\n" in
 								ignore (List.map (
 						                      fun x -> 
 						                                output_string x.outchan message;
 						                								flush x.outchan;
-						                    ) !users);
+						                    ) !users)
+					end;
+																
 				ignore(self#fin_tour ())
 			end
 		
