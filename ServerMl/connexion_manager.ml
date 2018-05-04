@@ -172,6 +172,11 @@ method signal_connexion client =
         begin		
 						if String.equal mot (find trajectoire tirage) then
 	              begin
+									
+										if (List.exists (fun x -> mot = x) tour#getWords) then
+											reponse := "MINVALID/" ^ mot ^ "ALREADY FOUND/\n"
+										else 
+									
 	                  (* verifier l'existance d'un mot dans le dictionnaire*)
 	                  if (List.exists (fun x -> x = (String.lowercase mot)) dictionnaire) then
 			                  begin
@@ -196,7 +201,7 @@ method signal_connexion client =
 																									end;
 																									x
 																								) !clients;
-																	
+															tour#add_word mot;
 															reponse := "MVALIDE/" ^ mot ^ "\n"
 			                    end
 	                  else

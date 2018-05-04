@@ -84,6 +84,7 @@ class tour (usrs : Connexion_manager.infos list ref) nb_tour=
 	(* method debut_tour = *) 
 	
 	val mutable tirage = matrice
+	val mutable words_found = [""]
 
 	method getClients = usrs
 	
@@ -136,7 +137,13 @@ class tour (usrs : Connexion_manager.infos list ref) nb_tour=
 																
 				ignore(self#fin_tour ())
 			end
-		
+	
+	method getWords = words_found
+	
+	method add_word word = 
+		Mutex.lock mutex;
+		words_found <- words_found@[word];
+		Mutex.unlock mutex	
 
 end;;
 
